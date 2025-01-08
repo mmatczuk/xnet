@@ -1786,7 +1786,7 @@ func (cs *clientStream) cleanupWriteRequest(err error) {
 	close(cs.donec)
 }
 
-// awaitOpenSlotForStreamLocked waits until len(streams) < maxConcurrentStreams.
+// awaitOpenSlotForStreamLocked waits until len(streams) + pendingResets < maxConcurrentStreams.
 // Must hold cc.mu.
 func (cc *ClientConn) awaitOpenSlotForStreamLocked(cs *clientStream) error {
 	for {
@@ -1800,7 +1800,7 @@ func (cc *ClientConn) awaitOpenSlotForStreamLocked(cs *clientStream) error {
 			return errClientConnUnusable
 		}
 		cc.lastIdle = time.Time{}
-		if cc.currentRequestCountLocked() < int(cc.maxConcurrentStreams) {
+		if int64(len(cc.streams)+cc.pendingResets) < int64(cc.maxConcurrentStreams) {
 			return nil
 		}
 		cc.pendingRequests++
